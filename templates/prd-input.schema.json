@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "App Idea PRD Input",
+  "type": "object",
+  "required": ["productName", "oneLiner", "targetUsers", "problem", "solution", "mvpFeatures"],
+  "properties": {
+    "productName": { "type": "string" },
+    "date": { "type": "string" },
+    "owner": { "type": "string" },
+    "status": { "type": "string" },
+    "oneLiner": { "type": "string" },
+    "targetUsers": { "type": "array", "items": { "type": "string" } },
+    "problem": { "type": "string" },
+    "solution": { "type": "string" },
+    "marketGap": { "type": "string" },
+    "originalValue": { "type": "string" },
+    "revenueOpportunity": { "type": "string" },
+    "whyNow": { "type": "string" },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "signal": { "type": "string" },
+          "finding": { "type": "string" },
+          "source": { "type": "string" }
+        }
+      }
+    },
+    "competitors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "strength": { "type": "string" },
+          "weakness": { "type": "string" },
+          "opportunity": { "type": "string" }
+        }
+      }
+    },
+    "goals": { "type": "array", "items": { "type": "string" } },
+    "nonGoals": { "type": "array", "items": { "type": "string" } },
+    "mvpFeatures": { "type": "array", "items": { "type": "string" } },
+    "userStories": { "type": "array", "items": { "type": "string" } },
+    "functionalRequirements": { "type": "array", "items": { "type": "string" } },
+    "nonFunctionalRequirements": { "type": "array", "items": { "type": "string" } },
+    "monetization": { "type": "array", "items": { "type": "string" } },
+    "addOns": { "type": "array", "items": { "type": "string" } },
+    "successMetrics": { "type": "array", "items": { "type": "string" } },
+    "validationPlan": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "roadmap": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "phase": { "type": "string" },
+          "items": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "openQuestions": { "type": "array", "items": { "type": "string" } }
+  }
+}

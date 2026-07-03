@@ -1,0 +1,9 @@
+{
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/daily-ideas",
+      "schedule": "0 */12 * * *"
+    }
+  ]
+}

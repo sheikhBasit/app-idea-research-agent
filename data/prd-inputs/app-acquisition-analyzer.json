@@ -1,0 +1,130 @@
+{
+  "productName": "AppDealScope",
+  "date": "2026-07-03",
+  "owner": "App Idea Research Agent",
+  "status": "Draft PRD",
+  "oneLiner": "A due-diligence assistant that turns app marketplace listings into risk reports, valuation notes, and post-acquisition product plans.",
+  "targetUsers": [
+    "People buying apps on Flippa, Acquire.com, Microns, Indiemaker, and SideProjectors",
+    "Indie hackers evaluating micro-SaaS or mobile app acquisitions",
+    "Small acquisition entrepreneurs"
+  ],
+  "problem": "Marketplace buyers see asking price, revenue claims, and short descriptions, but often lack a structured way to evaluate app quality, retention risk, technical handover, store risks, and growth upside.",
+  "solution": "Let users paste listing and app store information, then generate a structured risk score, diligence checklist, valuation notes, buyer questions, and a post-acquisition improvement PRD.",
+  "marketGap": "Marketplaces help discovery and transactions, but they do not give every buyer a neutral app-specific risk and improvement analysis.",
+  "originalValue": "The product combines marketplace diligence, app-store quality checks, review-gap mining, and PRD generation into one buyer workflow.",
+  "revenueOpportunity": "App buyers can pay for individual reports or a subscription because one avoided bad deal can save far more than the report cost.",
+  "whyNow": "More small apps, AI tools, and micro-SaaS products are being sold, while solo buyers need faster diligence without hiring consultants.",
+  "evidence": [
+    {
+      "signal": "Marketplace demand",
+      "finding": "Acquire.com, Flippa, Microns, Indiemaker, and SideProjectors list apps, SaaS, AI tools, and side projects for sale.",
+      "source": "Marketplace research"
+    },
+    {
+      "signal": "Revenue logic",
+      "finding": "Due diligence tools can monetize per report because users have high purchase intent.",
+      "source": "Buyer workflow analysis"
+    },
+    {
+      "signal": "Gap",
+      "finding": "Buyers need app-specific technical, review, and store-risk analysis beyond generic listing data.",
+      "source": "Market gap analysis"
+    }
+  ],
+  "competitors": [
+    {
+      "name": "Marketplaces",
+      "strength": "Listings and buyer/seller access",
+      "weakness": "Limited independent analysis for each buyer",
+      "opportunity": "Provide external diligence and report generation"
+    },
+    {
+      "name": "Manual consultants",
+      "strength": "Expert review",
+      "weakness": "Expensive and slow for small deals",
+      "opportunity": "Self-serve reports for sub-$100k acquisitions"
+    }
+  ],
+  "goals": [
+    "Help buyers reject weak deals faster.",
+    "Produce a clear diligence report from listing data.",
+    "Generate a post-acquisition product improvement PRD."
+  ],
+  "nonGoals": [
+    "Legal advice",
+    "Financial advice",
+    "Escrow or transaction handling",
+    "Guaranteeing seller claims"
+  ],
+  "mvpFeatures": [
+    "Manual listing data input",
+    "Risk checklist",
+    "Revenue multiple calculator",
+    "App-store review gap notes",
+    "Buyer question generator",
+    "DOCX report export"
+  ],
+  "userStories": [
+    "As a buyer, I want a risk score so I know whether to continue diligence.",
+    "As an indie hacker, I want buyer questions so I can contact sellers intelligently.",
+    "As an acquirer, I want an improvement PRD so I know what to build after purchase."
+  ],
+  "functionalRequirements": [
+    "The app must accept manual listing details.",
+    "The app must calculate basic revenue multiples.",
+    "The app must generate a risk report.",
+    "The app must generate diligence questions.",
+    "The app must export DOCX and Markdown."
+  ],
+  "nonFunctionalRequirements": [
+    "Reports should clearly label assumptions.",
+    "The app must avoid presenting output as legal or financial advice.",
+    "The app should preserve source URLs and date checked."
+  ],
+  "monetization": [
+    "Paid single report",
+    "Monthly buyer subscription",
+    "Team plan for small acquisition firms",
+    "Affiliate partnerships where allowed"
+  ],
+  "addOns": [
+    "Marketplace URL parser",
+    "Appfigures or Sensor Tower import",
+    "Automated review mining",
+    "Deal memo export",
+    "Seller-side listing improvement report"
+  ],
+  "successMetrics": [
+    "Report generated within 10 minutes",
+    "At least 30 percent of users generate a second report",
+    "Paid conversion on first serious listing analysis",
+    "User reports that output changed diligence decision"
+  ],
+  "validationPlan": [
+    "Analyze 20 public app listings manually.",
+    "Share sample reports with 10 app buyers.",
+    "Test $19, $49, and $99 report pricing.",
+    "Launch a private beta in indie acquisition communities."
+  ],
+  "risks": [
+    "Marketplace pages may block automation.",
+    "Revenue claims may be unverifiable.",
+    "Users may expect financial advice.",
+    "Paid app intelligence APIs may be costly."
+  ],
+  "roadmap": [
+    {
+      "phase": "MVP",
+      "items": ["Manual input", "Risk score", "Diligence checklist", "DOCX export"]
+    },
+    {
+      "phase": "V1",
+      "items": ["URL parser", "Review mining", "Valuation bands", "Post-acquisition PRD"]
+    }
+  ],
+  "openQuestions": [
+    "Which marketplace should be supported first?",
+    "Should the first product target buyers or sellers?"
+  ]
+}

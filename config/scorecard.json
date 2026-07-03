@@ -1,0 +1,47 @@
+{
+  "max_score": 100,
+  "minimum_recommend_score": 70,
+  "criteria": [
+    {
+      "name": "trend_strength",
+      "max": 15,
+      "description": "Category is growing in downloads, revenue, search, social attention, or marketplace demand."
+    },
+    {
+      "name": "pain_intensity",
+      "max": 15,
+      "description": "Users repeatedly complain about the same problem or actively search for alternatives."
+    },
+    {
+      "name": "competitor_weakness",
+      "max": 15,
+      "description": "Existing apps are weak in UX, price, trust, niche focus, localization, or workflow completion."
+    },
+    {
+      "name": "monetization_proof",
+      "max": 15,
+      "description": "Competitors charge, users pay, marketplace listings show MRR/profit, or B2B buyers have budget."
+    },
+    {
+      "name": "mvp_feasibility",
+      "max": 15,
+      "description": "A useful MVP can be built by a solo/small team in 2-6 weeks."
+    },
+    {
+      "name": "distribution_potential",
+      "max": 10,
+      "description": "There are clear ASO keywords, communities, creator channels, partnerships, or viral loops."
+    },
+    {
+      "name": "defensibility_acquisition_value",
+      "max": 10,
+      "description": "The app can build useful data, audience, brand, integrations, SEO, or acquisition value."
+    },
+    {
+      "name": "risk_penalty",
+      "min": -10,
+      "max": 0,
+      "description": "Subtract for legal, platform, API, privacy, medical, financial, copyright, or moderation risk."
+    }
+  ]
+}

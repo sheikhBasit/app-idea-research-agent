@@ -1,0 +1,26 @@
+{
+  "name": "app-idea-research-agent",
+  "version": "0.1.0",
+  "description": "Agent repo for researching app market gaps and generating PRDs in DOCX format.",
+  "type": "module",
+  "scripts": {
+    "dev": "node node_modules/next/dist/bin/next dev",
+    "build": "node node_modules/next/dist/bin/next build",
+    "start": "node node_modules/next/dist/bin/next start",
+    "generate:prd": "node scripts/generate-prd-docx.js",
+    "generate:all": "node scripts/generate-prd-docx.js --all && node scripts/sync-public-docs.js",
+    "sync:docs": "node scripts/sync-public-docs.js",
+    "sample:prd": "node scripts/generate-prd-docx.js data/sample-prd-input.json docs/generated/whatsapp-voice-note-to-invoice-prd.docx",
+    "check": "node scripts/generate-prd-docx.js --check"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "next": "^15.3.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

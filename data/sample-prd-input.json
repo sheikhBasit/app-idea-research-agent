@@ -1,0 +1,164 @@
+{
+  "productName": "VoiceBill",
+  "date": "2026-07-03",
+  "owner": "App Idea Research Agent",
+  "status": "Draft PRD",
+  "oneLiner": "A mobile app that turns WhatsApp voice notes from clients into structured tasks, prices, and invoice drafts.",
+  "targetUsers": [
+    "Freelancers who receive work requests through WhatsApp",
+    "Tutors, mechanics, designers, cleaners, photographers, and other local service providers",
+    "Small service businesses that do not need a full CRM"
+  ],
+  "problem": "Many service providers run their business from WhatsApp. Client instructions arrive as voice notes and chat messages, but invoices, task lists, and follow-ups still require manual copying into separate tools.",
+  "solution": "Let users share a WhatsApp voice note or audio file into the app, transcribe it, extract client name, job details, due date, price, and action items, then generate an editable invoice draft that can be exported as PDF or sent back through WhatsApp.",
+  "marketGap": "Transcription apps stop at text, invoice apps require manual entry, and CRMs are too heavy for small informal businesses. The gap is a mobile-first workflow from conversation to billable document.",
+  "originalValue": "The original value is not transcription itself. It is converting informal client communication into a billable business artifact: task list, quote, invoice, and follow-up message in one flow.",
+  "revenueOpportunity": "This sits between AI productivity, invoicing, and small-business workflow software. Revenue can come from conversion limits, invoice templates, recurring usage, team accounts, and later payment-link or accounting integrations.",
+  "whyNow": "AI transcription and structured extraction are good enough for practical mobile workflows, while more small businesses are already using WhatsApp as their primary sales and support channel.",
+  "evidence": [
+    {
+      "signal": "Trend",
+      "finding": "AI assistant apps and workflow-specific AI tools are growing as users move beyond generic chat.",
+      "source": "App intelligence and market trend research"
+    },
+    {
+      "signal": "User behavior",
+      "finding": "Small service providers commonly use messaging apps as their business inbox.",
+      "source": "Market observation and target-user workflow"
+    },
+    {
+      "signal": "Marketplace value",
+      "finding": "Small SaaS and mobile apps with clear workflow value are common acquisition targets on app/startup marketplaces.",
+      "source": "Acquire.com, Flippa, Microns, Indiemaker"
+    }
+  ],
+  "competitors": [
+    {
+      "name": "Generic transcription apps",
+      "strength": "Fast audio-to-text conversion",
+      "weakness": "Do not create invoices, tasks, or client records",
+      "opportunity": "Own the full workflow after transcription"
+    },
+    {
+      "name": "Invoice maker apps",
+      "strength": "PDF invoices and payment records",
+      "weakness": "Manual data entry from chats and voice notes",
+      "opportunity": "Reduce invoice creation time from minutes to seconds"
+    },
+    {
+      "name": "Small business CRMs",
+      "strength": "Contact and pipeline management",
+      "weakness": "Too complex for informal solo providers",
+      "opportunity": "Provide a lightweight WhatsApp-first workflow"
+    }
+  ],
+  "goals": [
+    "Reduce the time from client voice note to invoice draft.",
+    "Create a simple mobile workflow for non-technical service providers.",
+    "Support repeat usage through client history, templates, and monthly invoice tracking."
+  ],
+  "nonGoals": [
+    "Full accounting system in v1",
+    "Banking integrations in v1",
+    "Enterprise CRM features",
+    "Automatic WhatsApp account scraping"
+  ],
+  "mvpFeatures": [
+    "Import or share audio file into the app",
+    "Transcribe voice note",
+    "Extract client, service, price, due date, and notes",
+    "Editable invoice draft",
+    "PDF export",
+    "WhatsApp share action",
+    "Basic invoice history"
+  ],
+  "userStories": [
+    "As a freelancer, I want to share a client voice note into the app so I can avoid typing the request manually.",
+    "As a tutor, I want the app to detect the service and price so I can create an invoice quickly.",
+    "As a service provider, I want to edit extracted fields before exporting so I can correct AI mistakes.",
+    "As a small business owner, I want invoice history so I can see what I billed this month."
+  ],
+  "functionalRequirements": [
+    "The app must accept audio imports from Android share sheet.",
+    "The app must show transcription text before invoice generation.",
+    "The app must allow users to edit all extracted fields.",
+    "The app must generate a PDF invoice.",
+    "The app must store invoice drafts locally or in the user's account.",
+    "The app must include a disclaimer that AI extraction can be wrong and requires review."
+  ],
+  "nonFunctionalRequirements": [
+    "MVP should work on Android first.",
+    "Invoice generation should complete within 30 seconds for typical short voice notes.",
+    "User data should not be used for training unless explicitly opted in.",
+    "The app should support low-end phones and intermittent connectivity where possible."
+  ],
+  "monetization": [
+    "Free tier with 10 conversions per month",
+    "Monthly subscription for unlimited conversions and invoice templates",
+    "One-time paid template pack for local business invoice designs",
+    "Future team plan for small service businesses"
+  ],
+  "addOns": [
+    "Client CRM with job history and repeat-service reminders",
+    "Payment links and payment status tracking",
+    "Expense receipt capture tied to each invoice",
+    "Multi-language voice extraction for local markets",
+    "Service catalog and auto-pricing suggestions",
+    "Agency/team workspace for multiple field workers"
+  ],
+  "successMetrics": [
+    "Activation: first invoice generated within 5 minutes of install",
+    "Retention: user generates at least 3 invoices in first 14 days",
+    "Conversion: 5 percent free-to-paid conversion after usage limit",
+    "Quality: less than 10 percent extraction correction rate for key invoice fields"
+  ],
+  "validationPlan": [
+    "Interview 10 freelancers or local service providers who use WhatsApp for clients.",
+    "Create a landing page with a demo video and collect waitlist signups.",
+    "Manually process 20 real or sample voice notes to test field extraction accuracy.",
+    "Test pricing with two offers: monthly subscription and one-time invoice pack.",
+    "Launch a closed Android beta with 20 users."
+  ],
+  "risks": [
+    "Speech-to-text accuracy may be weak for noisy audio or mixed languages.",
+    "WhatsApp integration must use share/import workflows rather than unsupported scraping.",
+    "Users may distrust invoices generated by AI unless editing and review are clear.",
+    "Payment collection may be requested but should remain out of v1 scope."
+  ],
+  "roadmap": [
+    {
+      "phase": "MVP",
+      "items": [
+        "Audio import",
+        "Transcription",
+        "Invoice field extraction",
+        "PDF export",
+        "Invoice history"
+      ]
+    },
+    {
+      "phase": "V1",
+      "items": [
+        "Client profiles",
+        "Reusable service catalog",
+        "Multiple invoice templates",
+        "Reminder messages"
+      ]
+    },
+    {
+      "phase": "V2",
+      "items": [
+        "Multi-language extraction",
+        "Expense capture",
+        "Team account",
+        "Payment links"
+      ]
+    }
+  ],
+  "openQuestions": [
+    "Which languages and accents should be supported first?",
+    "Should the app start with Android only or Flutter cross-platform?",
+    "Which invoice formats are required for the first target country?",
+    "Do users prefer subscription pricing or pay-per-invoice credits?"
+  ]
+}

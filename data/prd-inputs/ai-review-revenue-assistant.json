@@ -1,0 +1,127 @@
+{
+  "productName": "ReviewRevenue",
+  "date": "2026-07-03",
+  "owner": "App Idea Research Agent",
+  "status": "Draft PRD",
+  "oneLiner": "An AI assistant that turns customer reviews into replies, retention tasks, social posts, and weekly business improvement insights.",
+  "targetUsers": [
+    "Restaurants, salons, clinics, gyms, tutors, and local service businesses",
+    "Small business owners who manage reviews themselves",
+    "Agencies managing local business reputation"
+  ],
+  "problem": "Local businesses know reviews affect trust and sales, but owners do not consistently reply, detect repeat complaints, or reuse positive reviews as marketing content.",
+  "solution": "Import or paste reviews, classify sentiment and issue type, generate brand-safe replies, flag urgent complaints, and create weekly improvement actions and social post ideas.",
+  "marketGap": "Enterprise reputation tools are too expensive and agency-oriented. Generic AI chat can write replies but does not manage the full review-to-retention workflow.",
+  "originalValue": "The product turns reviews into revenue actions: reply, recover customer, improve operations, and convert praise into marketing content.",
+  "revenueOpportunity": "This sits in AI workflow and local business marketing. Businesses already pay monthly for reputation, social media, and customer retention tools.",
+  "whyNow": "AI writing quality is strong enough for review replies, and local businesses increasingly need faster customer response across Google, social, and delivery platforms.",
+  "evidence": [
+    {
+      "signal": "Revenue category",
+      "finding": "Non-game app revenue and AI workflow apps are growing strongly.",
+      "source": "Sensor Tower State of Mobile 2026"
+    },
+    {
+      "signal": "Buyer budget",
+      "finding": "Local businesses already pay for marketing, reviews, and agency support.",
+      "source": "Market pricing observation"
+    },
+    {
+      "signal": "Expansion",
+      "finding": "Agency dashboards and multi-location workflows can raise LTV.",
+      "source": "B2B SaaS monetization pattern"
+    }
+  ],
+  "competitors": [
+    {
+      "name": "Enterprise reputation platforms",
+      "strength": "Integrations and multi-location support",
+      "weakness": "Too expensive or complex for small businesses",
+      "opportunity": "Simple self-serve AI product for owner-operators"
+    },
+    {
+      "name": "Generic AI chat tools",
+      "strength": "Can draft responses",
+      "weakness": "No review inbox, classification, history, or business insights",
+      "opportunity": "Own the workflow around replies and improvement actions"
+    }
+  ],
+  "goals": [
+    "Help owners reply to reviews in minutes.",
+    "Identify repeated customer complaints.",
+    "Turn positive reviews into reusable marketing content."
+  ],
+  "nonGoals": [
+    "Full social media management in v1",
+    "Enterprise multi-location permissions in MVP",
+    "Automatic posting without user approval"
+  ],
+  "mvpFeatures": [
+    "Paste/import reviews",
+    "Sentiment and topic classification",
+    "AI reply generation",
+    "Urgent complaint flag",
+    "Weekly improvement summary",
+    "Social post draft from positive reviews"
+  ],
+  "userStories": [
+    "As a salon owner, I want quick review replies so customers feel heard.",
+    "As a restaurant owner, I want repeated complaints grouped so I can fix operations.",
+    "As an agency, I want to generate drafts for multiple clients quickly."
+  ],
+  "functionalRequirements": [
+    "The app must let users paste review text.",
+    "The app must classify review sentiment and topic.",
+    "The app must generate editable replies.",
+    "The app must show a weekly summary of recurring issues.",
+    "The app must require user review before publishing any response."
+  ],
+  "nonFunctionalRequirements": [
+    "Replies should be generated in under 10 seconds.",
+    "The app must support brand tone settings.",
+    "The app must store source review and generated reply history."
+  ],
+  "monetization": [
+    "Monthly small business subscription",
+    "Agency tier with multiple clients",
+    "Premium templates for specific industries"
+  ],
+  "addOns": [
+    "Google Business Profile integration",
+    "Delivery-platform review imports",
+    "Agency dashboard",
+    "Multi-language replies",
+    "Review-to-video testimonial generator"
+  ],
+  "successMetrics": [
+    "First reply generated within 3 minutes",
+    "At least 10 reviews processed per active business per month",
+    "Paid conversion after 20 review replies",
+    "Weekly active usage by business owners"
+  ],
+  "validationPlan": [
+    "Interview 10 local businesses with public reviews.",
+    "Manually create review reports for 5 businesses.",
+    "Test willingness to pay for $9, $19, and $49 monthly tiers.",
+    "Launch a lightweight web/mobile MVP."
+  ],
+  "risks": [
+    "Platform API access may be limited.",
+    "Bad AI replies could damage customer relationships.",
+    "Some businesses may prefer agencies over software."
+  ],
+  "roadmap": [
+    {
+      "phase": "MVP",
+      "items": ["Paste reviews", "Generate replies", "Topic classification", "Weekly summary"]
+    },
+    {
+      "phase": "V1",
+      "items": ["Google integration", "Business tone profiles", "Social post drafts"]
+    }
+  ],
+  "openQuestions": [
+    "Which local business niche should be targeted first?",
+    "Should this launch as mobile app, web app, or both?"
+  ]
+}

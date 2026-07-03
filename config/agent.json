@@ -1,0 +1,36 @@
+{
+  "name": "app-idea-research-agent",
+  "version": "0.1.0",
+  "description": "Researches trending app ideas, market gaps, competitors, monetization, and build feasibility.",
+  "primary_instruction_file": "agent.md",
+  "workflow_file": "workflow.md",
+  "scorecard_file": "config/scorecard.json",
+  "templates": {
+    "idea_card": "templates/idea-card.md",
+    "research_brief": "templates/research-brief.md"
+  },
+  "recommended_sources": [
+    "Sensor Tower",
+    "Appfigures",
+    "AppTweak",
+    "MobileAction",
+    "AppMagic",
+    "Apptopia",
+    "Similarweb",
+    "42matters",
+    "Acquire.com",
+    "Flippa",
+    "Microns",
+    "Indiemaker",
+    "SideProjectors",
+    "Empire Flippers",
+    "Google Play",
+    "Apple App Store",
+    "Product Hunt",
+    "Reddit",
+    "Google Trends"
+  ],
+  "minimum_evidence_signals": 3,
+  "minimum_recommend_score": 70,
+  "default_output": "ranked_research_brief"
+}
