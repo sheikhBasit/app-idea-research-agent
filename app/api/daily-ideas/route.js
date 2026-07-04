@@ -61,7 +61,7 @@ export function GET(request) {
   const refreshNonce = Number(requestUrl.searchParams.get("t"));
   const seed = isManualRefresh ? (Number.isFinite(refreshNonce) ? refreshNonce : Date.now()) : baseSeed;
   const candidates = isManualRefresh && currentIdea
-    ? [...freshIdeas, ...ideas].filter((idea) => idea.name !== currentIdea)
+    ? freshIdeas.filter((idea) => idea.name !== currentIdea)
     : ideas;
   const selected = candidates[seed % candidates.length] || ideas[baseSeed % ideas.length];
   const nextRefresh = new Date(now);
