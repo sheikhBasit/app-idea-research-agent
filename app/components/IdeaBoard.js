@@ -409,6 +409,13 @@ const userKeyStorageKey = "app-idea-research-agent.userKey";
 const dailyCacheKey = "app-idea-research-agent.dailyHook";
 const dailyRefreshMs = 12 * 60 * 60 * 1000;
 
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 const competitorExamples = {
   "AI workflow + local business SaaS": ["Birdeye", "Podium", "ChatGPT", "Google Business Profile"],
   "Entertainment + AI content": ["ReelShort", "DramaBox", "TikTok", "YouTube Shorts"],
@@ -626,12 +633,19 @@ export default function IdeaBoard() {
       }
       const response = await fetch(`/api/daily-ideas${params.size ? `?${params.toString()}` : ""}`, { cache: "no-store" });
       const data = await response.json();
-      const matchedIdea = ideas.find((idea) => idea.name === data.idea) || ideas[0];
+      const matchedIdea = ideas.find((idea) => idea.name === data.idea);
+      const displayedIdea = matchedIdea || {
+        id: `fresh-${slugify(data.idea)}`,
+        name: data.idea,
+        category: data.category || `${data.type || "SaaS"} opportunity`,
+        type: data.type || "SaaS",
+        devDays: data.devDays || 15
+      };
       const nextDaily = {
         date: data.date,
-        idea: matchedIdea,
+        idea: displayedIdea,
         signal: data.researchTask,
-        type: data.type || matchedIdea.type,
+        type: data.type || displayedIdea.type,
         generatedAt: data.generatedAt,
         nextRefreshAt: data.nextRefreshAt
       };
@@ -799,10 +813,16 @@ export default function IdeaBoard() {
                 </p>
                 <p>{daily.signal}</p>
                 <div className="dailyActions">
-                  <button type="button" onClick={() => setSelectedId(daily.idea.id)}>Open idea</button>
-                  <button type="button" onClick={() => toggleSaved(daily.idea.id)}>
-                    {saved.includes(daily.idea.id) ? "Saved" : "Save idea"}
-                  </button>
+                  {ideas.some((idea) => idea.id === daily.idea.id) ? (
+                    <>
+                      <button type="button" onClick={() => setSelectedId(daily.idea.id)}>Open idea</button>
+                      <button type="button" onClick={() => toggleSaved(daily.idea.id)}>
+                        {saved.includes(daily.idea.id) ? "Saved" : "Save idea"}
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" disabled>Fresh research idea</button>
+                  )}
                 </div>
               </>
             ) : (
