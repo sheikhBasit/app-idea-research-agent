@@ -53,6 +53,7 @@ export default function Home() {
           <div className="navLinks">
             <a href="#research">Research</a>
             <a href="#ideas">Ideas</a>
+            <a href="#saved">Saved</a>
             <a href="#prd">Workflow</a>
           </div>
         </nav>

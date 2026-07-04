@@ -373,6 +373,58 @@ dd {
   flex-wrap: wrap;
 }
 
+.cardHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.savedControls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.miniButton {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 4px;
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.miniButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.miniButton.accent {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.miniButton.ghost {
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.dailyMeta {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+  margin-bottom: 10px;
+}
+
 .ideasExplorer {
   padding-top: 48px;
 }
@@ -737,6 +789,10 @@ dd {
     grid-template-columns: 1fr;
   }
 
+  .filterPanel {
+    grid-template-columns: 1fr;
+  }
+
   .agentPanel {
     max-width: 560px;
   }
@@ -770,6 +826,10 @@ dd {
 
   .scoreOrb {
     width: 72px;
+  }
+
+  .typeSegment {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -817,48 +877,104 @@ dd {
   }
 }
 
-/* Build Time Filter Bar Styles */
-.filterBar {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
+.filterPanel {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(320px, 1fr);
+  gap: 14px;
+  align-items: stretch;
   margin-top: 18px;
-  padding: 8px 12px;
-  background: var(--panel);
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.07);
+}
+
+.typeSegment {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 5px;
+  background: #e8eef3;
+  border: 1px solid #d7dde5;
+  border-radius: var(--radius);
+}
+
+.typeSegment button {
+  min-height: 50px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  font-weight: 900;
+}
+
+.typeSegment button span,
+.typeSegment button strong {
+  display: block;
+}
+
+.typeSegment button span {
+  font-size: 13px;
+}
+
+.typeSegment button strong {
+  font-size: 11px;
+  color: inherit;
+  opacity: 0.78;
+}
+
+.typeSegment button.active {
+  background: #0f766e;
+  color: white;
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.22);
+}
+
+.buildFilter {
+  display: grid;
+  gap: 8px;
+  align-content: center;
 }
 
 .filterLabel {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 900;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-right: 4px;
+  letter-spacing: 0;
+}
+
+.filterChips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .filterBtn {
-  background: transparent;
+  background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 6px 14px;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 14px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 850;
   color: var(--muted);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .filterBtn:hover {
-  background: var(--bg);
-  color: var(--ink);
+  border-color: rgba(15, 118, 110, 0.46);
+  color: var(--accent-dark);
+  transform: translateY(-1px);
 }
 
 .filterBtn.active {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: #111827;
+  border-color: #111827;
   color: white;
 }
-

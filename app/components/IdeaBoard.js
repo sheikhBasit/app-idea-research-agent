@@ -390,6 +390,7 @@ const devDaysMap = {
 
 ideas.forEach((idea) => {
   idea.devDays = devDaysMap[idea.id] || 30;
+  idea.type = /game/i.test(idea.category) ? "Game" : "SaaS";
 });
 
 const dailySignals = [
@@ -405,6 +406,8 @@ const dailySignals = [
 const tabs = ["Overview", "Market", "Competitors", "Gaps", "MVP", "Revenue", "Validation", "Risks", "Roadmap"];
 const storageKey = "app-idea-research-agent.savedIdeas";
 const userKeyStorageKey = "app-idea-research-agent.userKey";
+const dailyCacheKey = "app-idea-research-agent.dailyHook";
+const dailyRefreshMs = 12 * 60 * 60 * 1000;
 
 const competitorExamples = {
   "AI workflow + local business SaaS": ["Birdeye", "Podium", "ChatGPT", "Google Business Profile"],
@@ -579,8 +582,10 @@ export default function IdeaBoard() {
   const [selectedId, setSelectedId] = useState(ideas[0].id);
   const [activeTab, setActiveTab] = useState("Overview");
   const [filterDays, setFilterDays] = useState("all");
-  const [dailySeed, setDailySeed] = useState(0);
+  const [filterType, setFilterType] = useState("all");
+  const [daily, setDaily] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isRefreshingDaily, setIsRefreshingDaily] = useState(false);
 
   async function loadSavedIdeas(key) {
     if (!key) return;
@@ -596,6 +601,55 @@ export default function IdeaBoard() {
     }
   }
 
+  async function loadDailyHook({ force = false } = {}) {
+    const cached = window.localStorage.getItem(dailyCacheKey);
+    if (!force && cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        const fetchedAt = new Date(parsed.fetchedAt).getTime();
+        if (Number.isFinite(fetchedAt) && Date.now() - fetchedAt < dailyRefreshMs) {
+          setDaily(parsed.daily);
+          return;
+        }
+      } catch {
+        window.localStorage.removeItem(dailyCacheKey);
+      }
+    }
+
+    setIsRefreshingDaily(true);
+    try {
+      const response = await fetch(`/api/daily-ideas${force ? "?refresh=1" : ""}`, { cache: "no-store" });
+      const data = await response.json();
+      const matchedIdea = ideas.find((idea) => idea.name === data.idea) || ideas[0];
+      const nextDaily = {
+        date: data.date,
+        idea: matchedIdea,
+        signal: data.researchTask,
+        type: data.type || matchedIdea.type,
+        generatedAt: data.generatedAt,
+        nextRefreshAt: data.nextRefreshAt
+      };
+      setDaily(nextDaily);
+      window.localStorage.setItem(dailyCacheKey, JSON.stringify({
+        fetchedAt: new Date().toISOString(),
+        daily: nextDaily
+      }));
+    } catch {
+      const now = new Date();
+      const hourBlock = now.getHours() < 12 ? 0 : 12;
+      const seed = Number(`${now.getFullYear()}${now.getMonth() + 1}${now.getDate()}${hourBlock}`);
+      const fallbackIdea = ideas[seed % ideas.length];
+      setDaily({
+        date: now.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) + (hourBlock === 0 ? " AM" : " PM"),
+        idea: fallbackIdea,
+        signal: dailySignals[seed % dailySignals.length],
+        type: fallbackIdea.type
+      });
+    } finally {
+      setIsRefreshingDaily(false);
+    }
+  }
+
   useEffect(() => {
     const stored = window.localStorage.getItem(storageKey);
     if (stored) setSaved(JSON.parse(stored));
@@ -603,29 +657,12 @@ export default function IdeaBoard() {
     const key = getOrCreateUserKey();
     setUserKey(key);
     loadSavedIdeas(key);
-
-    const today = new Date();
-    const hourBlock = today.getHours() < 12 ? 0 : 12;
-    const initialSeed = Number(`${today.getFullYear()}${today.getMonth() + 1}${today.getDate()}${hourBlock}`);
-    setDailySeed(initialSeed);
+    loadDailyHook();
   }, []);
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(saved));
   }, [saved]);
-
-  const daily = useMemo(() => {
-    if (dailySeed === 0) return null;
-    const idea = ideas[dailySeed % ideas.length];
-    const signal = dailySignals[dailySeed % dailySignals.length];
-    const today = new Date();
-    const isPM = dailySeed % 100 === 12;
-    return {
-      date: today.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) + (isPM ? " PM" : " AM"),
-      idea,
-      signal
-    };
-  }, [dailySeed]);
 
   async function refreshSaved() {
     setIsSyncing(true);
@@ -634,14 +671,18 @@ export default function IdeaBoard() {
   }
 
   function refreshDaily() {
-    setDailySeed(Math.floor(Math.random() * 1000000));
+    loadDailyHook({ force: true });
   }
 
   const filteredIdeas = useMemo(() => {
-    if (filterDays === "all") return ideas;
+    let nextIdeas = ideas;
+    if (filterType !== "all") {
+      nextIdeas = nextIdeas.filter((idea) => idea.type === filterType);
+    }
+    if (filterDays === "all") return nextIdeas;
     const maxDays = parseInt(filterDays, 10);
-    return ideas.filter((idea) => idea.devDays <= maxDays);
-  }, [filterDays]);
+    return nextIdeas.filter((idea) => idea.devDays <= maxDays);
+  }, [filterDays, filterType]);
 
   const selected = useMemo(() => {
     return filteredIdeas.find((idea) => idea.id === selectedId) || filteredIdeas[0] || ideas[0];
@@ -739,27 +780,17 @@ export default function IdeaBoard() {
           <article className="dailyCard premium3d">
             {daily ? (
               <>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <div className="cardHeaderRow">
                   <span>{daily.date}</span>
-                  <button
-                    type="button"
-                    onClick={refreshDaily}
-                    className="noPrint"
-                    style={{
-                      padding: "4px 8px",
-                      fontSize: "11px",
-                      borderRadius: "4px",
-                      border: "1px solid var(--line)",
-                      background: "transparent",
-                      color: "var(--muted)",
-                      cursor: "pointer",
-                      fontWeight: 700
-                    }}
-                  >
-                    🔄 Cycle Idea
+                  <button type="button" onClick={refreshDaily} disabled={isRefreshingDaily} className="miniButton ghost noPrint">
+                    {isRefreshingDaily ? "Refreshing..." : "Refresh database"}
                   </button>
                 </div>
                 <h3>{daily.idea.name}</h3>
+                <p className="dailyMeta">
+                  {daily.type} idea
+                  {daily.nextRefreshAt ? ` • next 12-hour fetch ${new Date(daily.nextRefreshAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : " • fetches every 12 hours"}
+                </p>
                 <p>{daily.signal}</p>
                 <div className="dailyActions">
                   <button type="button" onClick={() => setSelectedId(daily.idea.id)}>Open idea</button>
@@ -772,61 +803,20 @@ export default function IdeaBoard() {
               <p>Loading hook...</p>
             )}
           </article>
-          <article className="savedCard premium3d soft">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "8px" }}>
-              <span>Storage: {storageMode === "neon" ? "Neon" : "Local fallback"}</span>
-              <div style={{ display: "flex", gap: "6px" }} className="noPrint">
-                <button
-                  type="button"
-                  onClick={refreshSaved}
-                  disabled={isSyncing}
-                  style={{
-                    padding: "4px 8px",
-                    fontSize: "11px",
-                    borderRadius: "4px",
-                    border: "1px solid var(--line)",
-                    background: "var(--panel)",
-                    color: "var(--ink)",
-                    cursor: "pointer",
-                    fontWeight: 700,
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-                  }}
-                >
-                  {isSyncing ? "Syncing..." : "🔄 Refresh Database"}
+          <article id="saved" className="savedCard premium3d soft">
+            <div className="cardHeaderRow">
+              <span>{savedIdeas.length} saved • Storage: {storageMode === "neon" ? "Neon" : "Local fallback"}</span>
+              <div className="savedControls noPrint">
+                <button type="button" onClick={refreshSaved} disabled={isSyncing} className="miniButton">
+                  {isSyncing ? "Syncing..." : "Refresh saved list"}
                 </button>
                 {saved.length < ideas.length && (
-                  <button
-                    type="button"
-                    onClick={saveAll}
-                    style={{
-                      padding: "4px 8px",
-                      fontSize: "11px",
-                      borderRadius: "4px",
-                      border: "1px solid var(--line)",
-                      background: "var(--accent)",
-                      color: "white",
-                      cursor: "pointer",
-                      fontWeight: 700
-                    }}
-                  >
+                  <button type="button" onClick={saveAll} className="miniButton accent">
                     Save All
                   </button>
                 )}
                 {saved.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearAll}
-                    style={{
-                      padding: "4px 8px",
-                      fontSize: "11px",
-                      borderRadius: "4px",
-                      border: "1px solid var(--line)",
-                      background: "transparent",
-                      color: "var(--muted)",
-                      cursor: "pointer",
-                      fontWeight: 700
-                    }}
-                  >
+                  <button type="button" onClick={clearAll} className="miniButton ghost">
                     Clear All
                   </button>
                 )}
@@ -845,30 +835,52 @@ export default function IdeaBoard() {
       <section id="ideas" className="section ideasExplorer">
         <div className="sectionTitle">
           <p className="eyebrow">
-            {filterDays === "all" ? `${ideas.length} ranked opportunities` : `${filteredIdeas.length} of ${ideas.length} ideas match filter`}
+            {filterDays === "all" && filterType === "all" ? `${ideas.length} ranked SaaS and game opportunities` : `${filteredIdeas.length} of ${ideas.length} ideas match filters`}
           </p>
           <h2>Click an idea to inspect revenue, gaps, values, and expansion paths</h2>
           
-          <div className="filterBar noPrint">
-            <span className="filterLabel">Build Time:</span>
-            {[
-              { label: "All Ideas", value: "all" },
-              { label: "≤ 10 Days (Sprint MVP)", value: "10" },
-              { label: "≤ 15 Days (2 Weeks)", value: "15" },
-              { label: "≤ 20 Days (3 Weeks)", value: "20" },
-              { label: "≤ 30 Days (1 Month)", value: "30" }
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                className={`filterBtn ${filterDays === opt.value ? "active" : ""}`}
-                onClick={() => {
-                  setFilterDays(opt.value);
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="filterPanel noPrint" aria-label="Idea filters">
+            <div className="typeSegment" role="group" aria-label="Idea type">
+              {[
+                { label: "All", value: "all", count: ideas.length },
+                { label: "SaaS", value: "SaaS", count: ideas.filter((idea) => idea.type === "SaaS").length },
+                { label: "Games", value: "Game", count: ideas.filter((idea) => idea.type === "Game").length }
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={filterType === opt.value ? "active" : ""}
+                  onClick={() => setFilterType(opt.value)}
+                >
+                  <span>{opt.label}</span>
+                  <strong>{opt.count}</strong>
+                </button>
+              ))}
+            </div>
+
+            <div className="buildFilter">
+              <span className="filterLabel">Development days through vibe coding</span>
+              <div className="filterChips">
+                {[
+                  { label: "All", value: "all" },
+                  { label: "10 days", value: "10" },
+                  { label: "15 days", value: "15" },
+                  { label: "20 days", value: "20" },
+                  { label: "30 days", value: "30" }
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className={`filterBtn ${filterDays === opt.value ? "active" : ""}`}
+                    onClick={() => {
+                      setFilterDays(opt.value);
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -886,7 +898,7 @@ export default function IdeaBoard() {
               >
                 <span className="tileRank">#{idea.rank}</span>
                 <strong>{idea.name}</strong>
-                <small>{idea.category} • {idea.devDays}d build</small>
+                <small>{idea.type} • {idea.category} • {idea.devDays}d vibe-coding build</small>
                 <em>{idea.score}/100</em>
               </button>
             ))}
@@ -903,6 +915,7 @@ export default function IdeaBoard() {
                 <p className="eyebrow">Selected idea</p>
                 <h3>{selected.name}</h3>
                 <p>{selected.category}</p>
+                <p className="dailyMeta">{selected.type} • {selected.devDays} days through vibe coding</p>
               </div>
               <div className="scoreOrb">{selected.score}</div>
             </div>
@@ -946,7 +959,7 @@ export default function IdeaBoard() {
                   <section>
                     <h4>Estimated Build Time</h4>
                     <p style={{ fontWeight: 700, fontSize: "1.15rem", color: "var(--accent)", margin: 0 }}>
-                      ⚡ {selected.devDays} Days MVP Build
+                      {selected.devDays} Days MVP Build Through Vibe Coding
                     </p>
                   </section>
                   <section>
