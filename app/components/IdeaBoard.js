@@ -646,6 +646,8 @@ export default function IdeaBoard() {
         idea: displayedIdea,
         signal: data.researchTask,
         type: data.type || displayedIdea.type,
+        evidence: Array.isArray(data.evidence) ? data.evidence : [],
+        refreshSource: data.refreshSource,
         generatedAt: data.generatedAt,
         nextRefreshAt: data.nextRefreshAt
       };
@@ -812,6 +814,16 @@ export default function IdeaBoard() {
                   {daily.nextRefreshAt ? ` • next 12-hour fetch ${new Date(daily.nextRefreshAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : " • fetches every 12 hours"}
                 </p>
                 <p>{daily.signal}</p>
+                {daily.evidence?.length > 0 && (
+                  <div className="evidenceList">
+                    {daily.evidence.slice(0, 3).map((item) => (
+                      <a href={item.url} target="_blank" rel="noreferrer" key={`${item.source}-${item.title}`}>
+                        <span>{item.source}</span>
+                        <strong>{item.title}</strong>
+                      </a>
+                    ))}
+                  </div>
+                )}
                 <div className="dailyActions">
                   {ideas.some((idea) => idea.id === daily.idea.id) ? (
                     <>

@@ -43,6 +43,105 @@ const freshIdeas = [
   { name: "Vocabulary Boss Rush", type: "Game", category: "Educational mobile game", devDays: 16 }
 ];
 
+const liveSources = [
+  {
+    name: "Hacker News",
+    url: "https://hn.algolia.com/api/v1/search_by_date?query=AI%20app%20SaaS%20startup&tags=story&hitsPerPage=12"
+  },
+  {
+    name: "GitHub",
+    url: "https://api.github.com/search/repositories?q=AI%20app%20created:%3E2026-01-01&sort=stars&order=desc&per_page=10"
+  },
+  {
+    name: "Reddit SaaS",
+    url: "https://www.reddit.com/r/SaaS/search.json?q=AI%20tool%20startup&restrict_sr=1&sort=new&t=week&limit=10"
+  },
+  {
+    name: "Product Hunt",
+    url: "https://www.producthunt.com/feed"
+  }
+];
+
+const liveIdeaRules = [
+  {
+    keywords: ["invoice", "billing", "receipt", "payment", "expense"],
+    idea: "AI Cashflow Follow-Up Assistant",
+    category: "Small business finance",
+    task: "Check invoice, receipt, and payment workflow complaints, then validate whether users pay for reminders, reconciliation, or client follow-up."
+  },
+  {
+    keywords: ["review", "reputation", "feedback", "testimonial"],
+    idea: "Review-To-Revenue Campaign Builder",
+    category: "Local business marketing",
+    task: "Mine review-management competitors for weak reporting, slow replies, and missed testimonial reuse."
+  },
+  {
+    keywords: ["video", "clip", "youtube", "tiktok", "shorts", "creator"],
+    idea: "Creator Clip Testing Planner",
+    category: "Creator growth tooling",
+    task: "Compare short-video tools and identify gaps around hook testing, repurposing, and local-business content calendars."
+  },
+  {
+    keywords: ["resume", "job", "career", "hiring", "recruit", "interview"],
+    idea: "Job Application Proof Pack Builder",
+    category: "Career productivity",
+    task: "Check job-search communities for repeated pain around tailored applications, proof links, and interview preparation."
+  },
+  {
+    keywords: ["shopify", "ecommerce", "store", "seller", "marketplace"],
+    idea: "Ecommerce Listing Fix Queue",
+    category: "Ecommerce operations",
+    task: "Review seller tooling and marketplace complaints for gaps in listing QA, photo checks, and conversion fixes."
+  },
+  {
+    keywords: ["meeting", "notion", "docs", "slack", "knowledge", "sop"],
+    idea: "Meeting-To-Operating-System Converter",
+    category: "Team documentation",
+    task: "Validate whether teams need meeting notes converted into SOPs, checklists, owners, and reusable templates."
+  },
+  {
+    keywords: ["study", "course", "school", "learn", "education", "exam"],
+    idea: "Exam Weakness Drill Generator",
+    category: "AI education",
+    task: "Check student forums and AI education apps for gaps around local curriculum, weak-topic drills, and parent reports."
+  },
+  {
+    keywords: ["clinic", "health", "doctor", "patient", "appointment"],
+    idea: "Clinic Admin Recovery Queue",
+    category: "Healthcare admin",
+    task: "Validate admin-only healthcare workflows: no-show recovery, result follow-up, reminder templates, and waitlist filling."
+  },
+  {
+    keywords: ["agent", "automation", "workflow", "assistant", "ai"],
+    idea: "Vertical AI Workflow Agent",
+    category: "AI workflow SaaS",
+    task: "Pick one narrow buyer segment and validate whether generic AI agents miss permissions, memory, exports, and repeat workflows."
+  }
+];
+
+const relevantSignalWords = [
+  "ai",
+  "app",
+  "saas",
+  "startup",
+  "tool",
+  "agent",
+  "automation",
+  "workflow",
+  "product",
+  "creator",
+  "video",
+  "invoice",
+  "review",
+  "shopify",
+  "notion",
+  "github",
+  "assistant",
+  "business",
+  "customer",
+  "marketing"
+];
+
 const researchTasks = [
   "Find the paid upgrade trigger in a top-grossing competitor.",
   "Mine repeated one-star review complaints.",
@@ -51,7 +150,122 @@ const researchTasks = [
   "Check whether the category supports subscriptions, credits, or team plans."
 ];
 
-export function GET(request) {
+function fallbackPick(list, seed) {
+  return list[Math.abs(seed) % list.length];
+}
+
+function textFromHtmlOrXml(value) {
+  return String(value || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function uniqSignals(signals) {
+  const seen = new Set();
+  return signals.filter((signal) => {
+    const key = `${signal.source}:${signal.title}`.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return Boolean(signal.title);
+  });
+}
+
+async function fetchJsonOrText(source) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6000);
+  try {
+    const response = await fetch(source.url, {
+      cache: "no-store",
+      headers: {
+        "accept": "application/json,text/xml,text/html;q=0.9,*/*;q=0.8",
+        "user-agent": "App-Idea-Research-Agent/0.1"
+      },
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error(`${source.name} HTTP ${response.status}`);
+    const contentType = response.headers.get("content-type") || "";
+    return contentType.includes("json") ? response.json() : response.text();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function parseSourceSignals(source, payload) {
+  if (source.name === "Hacker News") {
+    return (payload.hits || []).map((item) => ({
+      source: source.name,
+      title: item.title || item.story_title,
+      url: item.url || `https://news.ycombinator.com/item?id=${item.objectID}`
+    }));
+  }
+
+  if (source.name === "GitHub") {
+    return (payload.items || []).map((item) => ({
+      source: source.name,
+      title: item.description || item.full_name,
+      url: item.html_url
+    }));
+  }
+
+  if (source.name === "Reddit SaaS") {
+    return (payload.data?.children || []).map((item) => ({
+      source: source.name,
+      title: item.data?.title,
+      url: item.data?.permalink ? `https://www.reddit.com${item.data.permalink}` : "https://www.reddit.com/r/SaaS/"
+    }));
+  }
+
+  const matches = Array.from(String(payload).matchAll(/<item>[\s\S]*?<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>[\s\S]*?<link>([\s\S]*?)<\/link>[\s\S]*?<\/item>/gi));
+  return matches.map((match) => ({
+    source: source.name,
+    title: textFromHtmlOrXml(match[1]),
+    url: textFromHtmlOrXml(match[2])
+  }));
+}
+
+async function fetchLiveSignals() {
+  const settled = await Promise.allSettled(liveSources.map(async (source) => {
+    const payload = await fetchJsonOrText(source);
+    return parseSourceSignals(source, payload);
+  }));
+
+  return uniqSignals(settled.flatMap((result) => result.status === "fulfilled" ? result.value : []))
+    .filter((signal) => {
+      const text = `${signal.title} ${signal.url}`.toLowerCase();
+      return signal.title && signal.title.length > 12 && relevantSignalWords.some((word) => text.includes(word));
+    })
+    .slice(0, 18);
+}
+
+function ideaFromLiveSignals(signals, seed, currentIdea) {
+  const signal = fallbackPick(signals, seed);
+  const haystack = signals.map((item) => item.title).join(" ").toLowerCase();
+  const rule = liveIdeaRules.find((item) => item.keywords.some((keyword) => haystack.includes(keyword)))
+    || fallbackPick(liveIdeaRules, seed);
+  const ideaName = rule.idea === currentIdea ? `${rule.idea} For Niche Operators` : rule.idea;
+
+  return {
+    name: ideaName,
+    type: rule.category.toLowerCase().includes("game") ? "Game" : "SaaS",
+    category: rule.category,
+    devDays: 10 + (Math.abs(seed) % 11),
+    task: rule.task,
+    evidence: signals.slice(0, 5).map((item) => ({
+      source: item.source,
+      title: item.title,
+      url: item.url
+    })),
+    sourceSignal: signal
+  };
+}
+
+export async function GET(request) {
   const requestUrl = new URL(request.url);
   const isManualRefresh = requestUrl.searchParams.get("refresh") === "1";
   const currentIdea = requestUrl.searchParams.get("current");
@@ -60,10 +274,14 @@ export function GET(request) {
   const baseSeed = Number(`${now.getUTCFullYear()}${now.getUTCMonth() + 1}${now.getUTCDate()}${hourBlock}`);
   const refreshNonce = Number(requestUrl.searchParams.get("t"));
   const seed = isManualRefresh ? (Number.isFinite(refreshNonce) ? refreshNonce : Date.now()) : baseSeed;
-  const candidates = isManualRefresh && currentIdea
+  const liveSignals = isManualRefresh ? await fetchLiveSignals() : [];
+  const liveIdea = liveSignals.length > 0 ? ideaFromLiveSignals(liveSignals, seed, currentIdea) : null;
+  const candidates = currentIdea
     ? freshIdeas.filter((idea) => idea.name !== currentIdea)
-    : ideas;
-  const selected = candidates[seed % candidates.length] || ideas[baseSeed % ideas.length];
+    : freshIdeas;
+  const selected = isManualRefresh
+    ? (liveIdea || fallbackPick(candidates, seed))
+    : fallbackPick(ideas, baseSeed);
   const nextRefresh = new Date(now);
   nextRefresh.setUTCHours(hourBlock === 0 ? 12 : 24, 0, 0, 0);
 
@@ -73,7 +291,10 @@ export function GET(request) {
     type: selected.type,
     category: selected.category || selected.type,
     devDays: selected.devDays || 15,
-    researchTask: researchTasks[seed % researchTasks.length],
+    researchTask: selected.task || researchTasks[seed % researchTasks.length],
+    evidence: selected.evidence || [],
+    sourceSignal: selected.sourceSignal || null,
+    refreshSource: liveIdea ? "live websites" : "local fallback",
     refreshIntervalHours: 12,
     generatedAt: now.toISOString(),
     nextRefreshAt: nextRefresh.toISOString(),
