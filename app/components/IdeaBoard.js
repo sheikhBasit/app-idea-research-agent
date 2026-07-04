@@ -618,7 +618,13 @@ export default function IdeaBoard() {
 
     setIsRefreshingDaily(true);
     try {
-      const response = await fetch(`/api/daily-ideas${force ? "?refresh=1" : ""}`, { cache: "no-store" });
+      const params = new URLSearchParams();
+      if (force) {
+        params.set("refresh", "1");
+        if (daily?.idea?.name) params.set("current", daily.idea.name);
+        params.set("t", String(Date.now()));
+      }
+      const response = await fetch(`/api/daily-ideas${params.size ? `?${params.toString()}` : ""}`, { cache: "no-store" });
       const data = await response.json();
       const matchedIdea = ideas.find((idea) => idea.name === data.idea) || ideas[0];
       const nextDaily = {
@@ -783,7 +789,7 @@ export default function IdeaBoard() {
                 <div className="cardHeaderRow">
                   <span>{daily.date}</span>
                   <button type="button" onClick={refreshDaily} disabled={isRefreshingDaily} className="miniButton ghost noPrint">
-                    {isRefreshingDaily ? "Refreshing..." : "Refresh database"}
+                    {isRefreshingDaily ? "Refreshing..." : "Refresh ideas"}
                   </button>
                 </div>
                 <h3>{daily.idea.name}</h3>

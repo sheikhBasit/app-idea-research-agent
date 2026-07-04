@@ -28,16 +28,23 @@ const researchTasks = [
   "Check whether the category supports subscriptions, credits, or team plans."
 ];
 
-export function GET() {
+export function GET(request) {
+  const requestUrl = new URL(request.url);
+  const isManualRefresh = requestUrl.searchParams.get("refresh") === "1";
+  const currentIdea = requestUrl.searchParams.get("current");
   const now = new Date();
   const hourBlock = now.getUTCHours() < 12 ? 0 : 12;
-  const seed = Number(`${now.getUTCFullYear()}${now.getUTCMonth() + 1}${now.getUTCDate()}${hourBlock}`);
-  const selected = ideas[seed % ideas.length];
+  const baseSeed = Number(`${now.getUTCFullYear()}${now.getUTCMonth() + 1}${now.getUTCDate()}${hourBlock}`);
+  const seed = isManualRefresh ? Date.now() : baseSeed;
+  const candidates = isManualRefresh && currentIdea
+    ? ideas.filter((idea) => idea.name !== currentIdea)
+    : ideas;
+  const selected = candidates[seed % candidates.length] || ideas[baseSeed % ideas.length];
   const nextRefresh = new Date(now);
   nextRefresh.setUTCHours(hourBlock === 0 ? 12 : 24, 0, 0, 0);
 
   return Response.json({
-    date: now.toISOString().slice(0, 10) + (hourBlock === 0 ? " AM" : " PM"),
+    date: now.toISOString().slice(0, 10) + (hourBlock === 0 ? " AM" : " PM") + (isManualRefresh ? " refreshed" : ""),
     idea: selected.name,
     type: selected.type,
     researchTask: researchTasks[seed % researchTasks.length],
