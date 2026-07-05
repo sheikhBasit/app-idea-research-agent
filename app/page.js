@@ -54,6 +54,7 @@ export default function Home() {
             <a href="#research">Research</a>
             <a href="#ideas">Ideas</a>
             <a href="#saved">Saved</a>
+            <a href="#archive">Old ideas</a>
             <a href="#prd">Workflow</a>
           </div>
         </nav>

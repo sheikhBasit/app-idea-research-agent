@@ -265,9 +265,33 @@ function ideaFromLiveSignals(signals, seed, currentIdea) {
   };
 }
 
+function makeIdeaBatch(signals, seed) {
+  const sourceSignals = signals.length > 0 ? signals : [];
+  return Array.from({ length: 20 }, (_, index) => {
+    const rule = liveIdeaRules[(seed + index) % liveIdeaRules.length];
+    const backup = freshIdeas[(seed + index) % freshIdeas.length];
+    const signal = sourceSignals[index % Math.max(sourceSignals.length, 1)];
+    const name = sourceSignals.length > 0
+      ? `${rule.idea}${index >= liveIdeaRules.length ? ` ${index + 1}` : ""}`
+      : backup.name;
+    return {
+      rank: index + 1,
+      name,
+      type: rule.category.toLowerCase().includes("game") ? "Game" : (backup.type || "SaaS"),
+      category: sourceSignals.length > 0 ? rule.category : backup.category,
+      devDays: 10 + ((seed + index) % 21),
+      score: 91 - Math.min(index, 19),
+      researchTask: sourceSignals.length > 0 ? rule.task : researchTasks[(seed + index) % researchTasks.length],
+      evidence: sourceSignals.slice(index, index + 3).concat(sourceSignals.slice(0, Math.max(0, 3 - (sourceSignals.length - index)))).slice(0, 3),
+      sourceSignal: signal || null
+    };
+  });
+}
+
 export async function GET(request) {
   const requestUrl = new URL(request.url);
   const isManualRefresh = requestUrl.searchParams.get("refresh") === "1";
+  const batchSize = Number(requestUrl.searchParams.get("batch") || 0);
   const currentIdea = requestUrl.searchParams.get("current");
   const now = new Date();
   const hourBlock = now.getUTCHours() < 12 ? 0 : 12;
@@ -275,6 +299,18 @@ export async function GET(request) {
   const refreshNonce = Number(requestUrl.searchParams.get("t"));
   const seed = isManualRefresh ? (Number.isFinite(refreshNonce) ? refreshNonce : Date.now()) : baseSeed;
   const liveSignals = isManualRefresh ? await fetchLiveSignals() : [];
+
+  if (isManualRefresh && batchSize >= 20) {
+    const batch = makeIdeaBatch(liveSignals, seed);
+    return Response.json({
+      date: now.toISOString(),
+      refreshSource: liveSignals.length > 0 ? "live websites" : "local fallback",
+      evidenceCount: liveSignals.length,
+      ideas: batch,
+      generatedAt: now.toISOString()
+    });
+  }
+
   const liveIdea = liveSignals.length > 0 ? ideaFromLiveSignals(liveSignals, seed, currentIdea) : null;
   const candidates = currentIdea
     ? freshIdeas.filter((idea) => idea.name !== currentIdea)

@@ -407,6 +407,8 @@ const tabs = ["Overview", "Market", "Competitors", "Gaps", "MVP", "Revenue", "Va
 const storageKey = "app-idea-research-agent.savedIdeas";
 const userKeyStorageKey = "app-idea-research-agent.userKey";
 const dailyCacheKey = "app-idea-research-agent.dailyHook";
+const currentIdeasStorageKey = "app-idea-research-agent.currentIdeas";
+const archivedIdeasStorageKey = "app-idea-research-agent.archivedIdeas";
 const dailyRefreshMs = 12 * 60 * 60 * 1000;
 
 function slugify(value) {
@@ -414,6 +416,40 @@ function slugify(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function hydrateFreshIdea(item, index) {
+  const category = item.category || `${item.type || "SaaS"} opportunity`;
+  const score = item.score || Math.max(70, 92 - index);
+  const type = item.type || (/game/i.test(category) ? "Game" : "SaaS");
+  const evidenceTitles = Array.isArray(item.evidence) && item.evidence.length > 0
+    ? item.evidence.map((signal) => `${signal.source}: ${signal.title}`)
+    : ["Live source evidence collected during refresh"];
+
+  return {
+    rank: index + 1,
+    id: `live-${slugify(item.name)}-${index + 1}`,
+    name: item.name,
+    category,
+    type,
+    score,
+    revenue: type === "Game"
+      ? "Ads, premium unlock, content packs, and optional in-app purchases"
+      : "$19-$199/mo, paid reports, credits, or team plans depending on buyer segment",
+    revenueValues: [
+      ["Live signal", item.sourceSignal?.source || item.refreshSource || "Website research"],
+      ["Evidence", `${Array.isArray(item.evidence) ? item.evidence.length : 0} linked signals`],
+      ["Build", `${item.devDays || 15} day MVP estimate`]
+    ],
+    graph: [24, 42, 58, 73, score],
+    gap: item.researchTask || "Live sources suggest a workflow with buyer pain, weak tooling, or a packaging gap worth validating.",
+    original: `A focused ${category.toLowerCase()} product generated from fresh website signals, packaged around one narrow workflow instead of broad generic AI features.`,
+    add: ["Team workspace", "Evidence dashboard", "PDF/export reports", "Templates", "Usage-based credits"],
+    sources: evidenceTitles,
+    mvp: ["Capture/import source input", "Generate ranked recommendations", "Review/edit output", "Export/share report", "Track follow-up actions"],
+    devDays: item.devDays || 15,
+    evidence: item.evidence || []
+  };
 }
 
 const competitorExamples = {
@@ -583,6 +619,8 @@ function getResearch(idea) {
 }
 
 export default function IdeaBoard() {
+  const [currentIdeas, setCurrentIdeas] = useState(ideas);
+  const [archivedIdeas, setArchivedIdeas] = useState([]);
   const [saved, setSaved] = useState([]);
   const [userKey, setUserKey] = useState("");
   const [storageMode, setStorageMode] = useState("local");
@@ -593,6 +631,7 @@ export default function IdeaBoard() {
   const [daily, setDaily] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRefreshingDaily, setIsRefreshingDaily] = useState(false);
+  const [isRenewingIdeas, setIsRenewingIdeas] = useState(false);
 
   async function loadSavedIdeas(key) {
     if (!key) return;
@@ -633,7 +672,7 @@ export default function IdeaBoard() {
       }
       const response = await fetch(`/api/daily-ideas${params.size ? `?${params.toString()}` : ""}`, { cache: "no-store" });
       const data = await response.json();
-      const matchedIdea = ideas.find((idea) => idea.name === data.idea);
+      const matchedIdea = currentIdeas.find((idea) => idea.name === data.idea);
       const displayedIdea = matchedIdea || {
         id: `fresh-${slugify(data.idea)}`,
         name: data.idea,
@@ -676,6 +715,29 @@ export default function IdeaBoard() {
     const stored = window.localStorage.getItem(storageKey);
     if (stored) setSaved(JSON.parse(stored));
 
+    const storedCurrentIdeas = window.localStorage.getItem(currentIdeasStorageKey);
+    if (storedCurrentIdeas) {
+      try {
+        const parsed = JSON.parse(storedCurrentIdeas);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCurrentIdeas(parsed);
+          setSelectedId(parsed[0].id);
+        }
+      } catch {
+        window.localStorage.removeItem(currentIdeasStorageKey);
+      }
+    }
+
+    const storedArchive = window.localStorage.getItem(archivedIdeasStorageKey);
+    if (storedArchive) {
+      try {
+        const parsed = JSON.parse(storedArchive);
+        if (Array.isArray(parsed)) setArchivedIdeas(parsed);
+      } catch {
+        window.localStorage.removeItem(archivedIdeasStorageKey);
+      }
+    }
+
     const key = getOrCreateUserKey();
     setUserKey(key);
     loadSavedIdeas(key);
@@ -685,6 +747,14 @@ export default function IdeaBoard() {
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(saved));
   }, [saved]);
+
+  useEffect(() => {
+    window.localStorage.setItem(currentIdeasStorageKey, JSON.stringify(currentIdeas));
+  }, [currentIdeas]);
+
+  useEffect(() => {
+    window.localStorage.setItem(archivedIdeasStorageKey, JSON.stringify(archivedIdeas));
+  }, [archivedIdeas]);
 
   async function refreshSaved() {
     setIsSyncing(true);
@@ -696,26 +766,66 @@ export default function IdeaBoard() {
     loadDailyHook({ force: true });
   }
 
+  async function renewAllIdeas() {
+    setIsRenewingIdeas(true);
+    try {
+      const response = await fetch(`/api/daily-ideas?refresh=1&batch=20&t=${Date.now()}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!Array.isArray(data.ideas) || data.ideas.length === 0) {
+        throw new Error("No new ideas returned");
+      }
+
+      const nextIdeas = data.ideas.slice(0, 20).map((item, index) => hydrateFreshIdea({
+        ...item,
+        refreshSource: data.refreshSource
+      }, index));
+      setArchivedIdeas((current) => [
+        {
+          id: `archive-${Date.now()}`,
+          savedAt: new Date().toISOString(),
+          source: data.refreshSource || "refresh",
+          ideas: currentIdeas
+        },
+        ...current
+      ].slice(0, 10));
+      setCurrentIdeas(nextIdeas);
+      setSelectedId(nextIdeas[0].id);
+      setFilterType("all");
+      setFilterDays("all");
+      setDaily({
+        date: new Date().toISOString().slice(0, 10) + " refreshed",
+        idea: nextIdeas[0],
+        signal: nextIdeas[0].gap,
+        type: nextIdeas[0].type,
+        evidence: nextIdeas[0].evidence || [],
+        refreshSource: data.refreshSource,
+        generatedAt: data.generatedAt
+      });
+    } finally {
+      setIsRenewingIdeas(false);
+    }
+  }
+
   const filteredIdeas = useMemo(() => {
-    let nextIdeas = ideas;
+    let nextIdeas = currentIdeas;
     if (filterType !== "all") {
       nextIdeas = nextIdeas.filter((idea) => idea.type === filterType);
     }
     if (filterDays === "all") return nextIdeas;
     const maxDays = parseInt(filterDays, 10);
     return nextIdeas.filter((idea) => idea.devDays <= maxDays);
-  }, [filterDays, filterType]);
+  }, [currentIdeas, filterDays, filterType]);
 
   const selected = useMemo(() => {
-    return filteredIdeas.find((idea) => idea.id === selectedId) || filteredIdeas[0] || ideas[0];
-  }, [filteredIdeas, selectedId]);
+    return filteredIdeas.find((idea) => idea.id === selectedId) || filteredIdeas[0] || currentIdeas[0] || ideas[0];
+  }, [currentIdeas, filteredIdeas, selectedId]);
 
-  const savedIdeas = ideas.filter((idea) => saved.includes(idea.id));
+  const savedIdeas = currentIdeas.filter((idea) => saved.includes(idea.id));
   const research = getResearch(selected);
   const competitors = getCompetitors(selected);
 
   async function toggleSaved(id) {
-    const idea = ideas.find((item) => item.id === id);
+    const idea = currentIdeas.find((item) => item.id === id);
     if (!idea) return;
     const isSaved = saved.includes(id);
 
@@ -746,7 +856,7 @@ export default function IdeaBoard() {
   }
 
   async function saveAll() {
-    const unsaved = ideas.filter((idea) => !saved.includes(idea.id));
+    const unsaved = currentIdeas.filter((idea) => !saved.includes(idea.id));
     if (unsaved.length === 0) return;
 
     setSaved((current) => [...current, ...unsaved.map((idea) => idea.id)]);
@@ -804,9 +914,14 @@ export default function IdeaBoard() {
               <>
                 <div className="cardHeaderRow">
                   <span>{daily.date}</span>
-                  <button type="button" onClick={refreshDaily} disabled={isRefreshingDaily} className="miniButton ghost noPrint">
-                    {isRefreshingDaily ? "Refreshing..." : "Refresh ideas"}
-                  </button>
+                  <div className="savedControls noPrint">
+                    <button type="button" onClick={refreshDaily} disabled={isRefreshingDaily || isRenewingIdeas} className="miniButton ghost">
+                      {isRefreshingDaily ? "Refreshing..." : "Refresh one"}
+                    </button>
+                    <button type="button" onClick={renewAllIdeas} disabled={isRenewingIdeas} className="miniButton accent">
+                      {isRenewingIdeas ? "Renewing..." : "Renew all 20"}
+                    </button>
+                  </div>
                 </div>
                 <h3>{daily.idea.name}</h3>
                 <p className="dailyMeta">
@@ -825,7 +940,7 @@ export default function IdeaBoard() {
                   </div>
                 )}
                 <div className="dailyActions">
-                  {ideas.some((idea) => idea.id === daily.idea.id) ? (
+                  {currentIdeas.some((idea) => idea.id === daily.idea.id) ? (
                     <>
                       <button type="button" onClick={() => setSelectedId(daily.idea.id)}>Open idea</button>
                       <button type="button" onClick={() => toggleSaved(daily.idea.id)}>
@@ -848,7 +963,7 @@ export default function IdeaBoard() {
                 <button type="button" onClick={refreshSaved} disabled={isSyncing} className="miniButton">
                   {isSyncing ? "Syncing..." : "Refresh saved list"}
                 </button>
-                {saved.length < ideas.length && (
+                {saved.length < currentIdeas.length && (
                   <button type="button" onClick={saveAll} className="miniButton accent">
                     Save All
                   </button>
@@ -870,19 +985,46 @@ export default function IdeaBoard() {
         </div>
       </section>
 
+      <section id="archive" className="section compact archiveSection">
+        <div className="sectionTitle">
+          <p className="eyebrow">Old ideas</p>
+          <h2>Archived idea boards from previous refreshes</h2>
+        </div>
+        {archivedIdeas.length === 0 ? (
+          <article className="savedCard soft">
+            <p>No archived boards yet. Use <strong>Renew all 20</strong> and the previous board will be saved here.</p>
+          </article>
+        ) : (
+          <div className="archiveGrid">
+            {archivedIdeas.map((archive) => (
+              <article className="savedCard soft" key={archive.id}>
+                <span>{new Date(archive.savedAt).toLocaleString()} • {archive.source}</span>
+                <h3>{archive.ideas.length} old ideas</h3>
+                <ul>{archive.ideas.slice(0, 20).map((idea) => <li key={idea.id}>{idea.name}</li>)}</ul>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section id="ideas" className="section ideasExplorer">
         <div className="sectionTitle">
           <p className="eyebrow">
-            {filterDays === "all" && filterType === "all" ? `${ideas.length} ranked SaaS and game opportunities` : `${filteredIdeas.length} of ${ideas.length} ideas match filters`}
+            {filterDays === "all" && filterType === "all" ? `${currentIdeas.length} ranked SaaS and game opportunities` : `${filteredIdeas.length} of ${currentIdeas.length} ideas match filters`}
           </p>
-          <h2>Click an idea to inspect revenue, gaps, values, and expansion paths</h2>
+          <div className="cardHeaderRow">
+            <h2>Click an idea to inspect revenue, gaps, values, and expansion paths</h2>
+            <button type="button" onClick={renewAllIdeas} disabled={isRenewingIdeas} className="miniButton accent noPrint">
+              {isRenewingIdeas ? "Renewing..." : "Renew all 20 from websites"}
+            </button>
+          </div>
           
           <div className="filterPanel noPrint" aria-label="Idea filters">
             <div className="typeSegment" role="group" aria-label="Idea type">
               {[
-                { label: "All", value: "all", count: ideas.length },
-                { label: "SaaS", value: "SaaS", count: ideas.filter((idea) => idea.type === "SaaS").length },
-                { label: "Games", value: "Game", count: ideas.filter((idea) => idea.type === "Game").length }
+                { label: "All", value: "all", count: currentIdeas.length },
+                { label: "SaaS", value: "SaaS", count: currentIdeas.filter((idea) => idea.type === "SaaS").length },
+                { label: "Games", value: "Game", count: currentIdeas.filter((idea) => idea.type === "Game").length }
               ].map((opt) => (
                 <button
                   key={opt.value}
