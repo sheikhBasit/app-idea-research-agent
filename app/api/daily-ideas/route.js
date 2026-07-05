@@ -1,3 +1,5 @@
+import { ensureSchema, getSql, hasDatabase } from "../../../lib/db.js";
+
 const ideas = [
   { name: "AI Review Revenue Assistant", type: "SaaS" },
   { name: "Vertical Micro-Drama Studio", type: "SaaS" },
@@ -288,25 +290,122 @@ function makeIdeaBatch(signals, seed) {
   });
 }
 
+function summarizeBoard(batch, source) {
+  const categories = [...new Set(batch.map((idea) => idea.category).filter(Boolean))].slice(0, 5);
+  const topIdeas = batch.slice(0, 3).map((idea) => idea.name).join(", ");
+  return `${batch.length} ideas from ${source}. Top ideas: ${topIdeas}. Main categories: ${categories.join(", ")}.`;
+}
+
+function normalizeDbBoard(row) {
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    boardDate: String(row.board_date).slice(0, 10),
+    ideas: row.ideas,
+    summary: row.summary,
+    source: row.source,
+    evidenceCount: row.evidence_count,
+    isActive: row.is_active,
+    createdAt: row.created_at
+  };
+}
+
+async function getStoredBoards() {
+  if (!hasDatabase()) {
+    return { storage: "local", currentBoard: null, archivedBoards: [] };
+  }
+
+  await ensureSchema();
+  const sql = getSql();
+  const rows = await sql`
+    SELECT id, board_date, ideas, summary, source, evidence_count, is_active, created_at
+    FROM idea_boards
+    ORDER BY is_active DESC, created_at DESC
+    LIMIT 12
+  `;
+  return {
+    storage: "neon",
+    currentBoard: normalizeDbBoard(rows.find((row) => row.is_active)),
+    archivedBoards: rows.filter((row) => !row.is_active).map(normalizeDbBoard)
+  };
+}
+
+async function persistBoard({ batch, source, evidenceCount, now }) {
+  if (!hasDatabase()) {
+    return { storage: "local", currentBoard: null, archivedBoards: [] };
+  }
+
+  await ensureSchema();
+  const sql = getSql();
+  const today = now.toISOString().slice(0, 10);
+  const summary = summarizeBoard(batch, source);
+  await sql`UPDATE idea_boards SET is_active = FALSE WHERE is_active = TRUE`;
+  await sql`
+    INSERT INTO idea_boards (board_date, ideas, summary, source, evidence_count, is_active)
+    VALUES (${today}, ${JSON.stringify(batch)}::jsonb, ${summary}, ${source}, ${evidenceCount}, TRUE)
+  `;
+  return getStoredBoards();
+}
+
+async function maybeRenewDailyBoard({ force, now, seed }) {
+  const stored = await getStoredBoards();
+  if (!hasDatabase()) return stored;
+
+  const today = now.toISOString().slice(0, 10);
+  if (!force && stored.currentBoard?.boardDate === today) {
+    return stored;
+  }
+
+  const liveSignals = await fetchLiveSignals();
+  const source = liveSignals.length > 0 ? "live websites" : "local fallback";
+  const batch = makeIdeaBatch(liveSignals, seed);
+  return persistBoard({ batch, source, evidenceCount: liveSignals.length, now });
+}
+
 export async function GET(request) {
   const requestUrl = new URL(request.url);
   const isManualRefresh = requestUrl.searchParams.get("refresh") === "1";
   const batchSize = Number(requestUrl.searchParams.get("batch") || 0);
+  const shouldPersist = requestUrl.searchParams.get("persist") === "1";
+  const wantsBoards = requestUrl.searchParams.get("boards") === "1";
+  const wantsDailyRenew = requestUrl.searchParams.get("daily") === "1";
   const currentIdea = requestUrl.searchParams.get("current");
   const now = new Date();
   const hourBlock = now.getUTCHours() < 12 ? 0 : 12;
   const baseSeed = Number(`${now.getUTCFullYear()}${now.getUTCMonth() + 1}${now.getUTCDate()}${hourBlock}`);
   const refreshNonce = Number(requestUrl.searchParams.get("t"));
   const seed = isManualRefresh ? (Number.isFinite(refreshNonce) ? refreshNonce : Date.now()) : baseSeed;
+
+  if (wantsBoards) {
+    return Response.json(await getStoredBoards());
+  }
+
+  if (wantsDailyRenew) {
+    return Response.json(await maybeRenewDailyBoard({ force: isManualRefresh, now, seed }));
+  }
+
   const liveSignals = isManualRefresh ? await fetchLiveSignals() : [];
 
   if (isManualRefresh && batchSize >= 20) {
     const batch = makeIdeaBatch(liveSignals, seed);
+    const source = liveSignals.length > 0 ? "live websites" : "local fallback";
+    if (shouldPersist) {
+      const stored = await persistBoard({ batch, source, evidenceCount: liveSignals.length, now });
+      return Response.json({
+        ...stored,
+        date: now.toISOString(),
+        refreshSource: source,
+        evidenceCount: liveSignals.length,
+        ideas: batch,
+        generatedAt: now.toISOString()
+      });
+    }
     return Response.json({
       date: now.toISOString(),
-      refreshSource: liveSignals.length > 0 ? "live websites" : "local fallback",
+      refreshSource: source,
       evidenceCount: liveSignals.length,
       ideas: batch,
+      summary: summarizeBoard(batch, source),
       generatedAt: now.toISOString()
     });
   }

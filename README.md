@@ -77,7 +77,7 @@ The website includes:
 - Save/unsave ideas.
 - PRD DOCX downloads.
 
-Saved ideas use Neon when `DATABASE_URL` or `POSTGRES_URL` is configured. If no database URL exists, the website falls back to browser `localStorage`.
+Saved ideas and renewed idea boards use Neon when `DATABASE_URL` or `POSTGRES_URL` is configured. If no database URL exists, the website falls back to browser `localStorage` for board state.
 
 ## Neon Storage
 
@@ -100,13 +100,32 @@ CREATE TABLE IF NOT EXISTS saved_ideas (
 );
 ```
 
+It also creates an `idea_boards` table for the daily 20-idea board and archived old boards:
+
+```sql
+CREATE TABLE IF NOT EXISTS idea_boards (
+  id BIGSERIAL PRIMARY KEY,
+  board_date DATE NOT NULL,
+  ideas JSONB NOT NULL,
+  summary TEXT NOT NULL,
+  source TEXT NOT NULL,
+  evidence_count INTEGER NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
 API routes:
 
 - `GET /api/saved-ideas?userKey=...`
 - `POST /api/saved-ideas`
 - `DELETE /api/saved-ideas?userKey=...&ideaId=...`
+- `GET /api/daily-ideas?daily=1`: renews the active board once per day and returns active/archive boards.
+- `GET /api/daily-ideas?refresh=1&batch=20&persist=1`: manually renews all 20 ideas and stores the old board.
 
 The current version uses an anonymous browser-generated `userKey`. Add auth later if you want accounts and cross-device identity.
+
+Vercel runs `/api/cron/renew-ideas` daily at 00:00 UTC to refresh the board and archive the previous one.
 
 ## Vercel Deploy
 

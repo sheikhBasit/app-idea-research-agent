@@ -452,6 +452,12 @@ function hydrateFreshIdea(item, index) {
   };
 }
 
+function summarizeBoard(boardIdeas, source) {
+  const topIdeas = boardIdeas.slice(0, 3).map((idea) => idea.name).join(", ");
+  const categories = [...new Set(boardIdeas.map((idea) => idea.category).filter(Boolean))].slice(0, 5).join(", ");
+  return `${boardIdeas.length} ideas from ${source}. Top ideas: ${topIdeas}. Main categories: ${categories}.`;
+}
+
 const competitorExamples = {
   "AI workflow + local business SaaS": ["Birdeye", "Podium", "ChatGPT", "Google Business Profile"],
   "Entertainment + AI content": ["ReelShort", "DramaBox", "TikTok", "YouTube Shorts"],
@@ -647,6 +653,41 @@ export default function IdeaBoard() {
     }
   }
 
+  async function loadStoredBoards() {
+    try {
+      const response = await fetch("/api/daily-ideas?daily=1", { cache: "no-store" });
+      const data = await response.json();
+      if (data.storage) setStorageMode(data.storage);
+
+      if (data.currentBoard?.ideas?.length) {
+        const nextIdeas = data.currentBoard.ideas.map((item, index) => hydrateFreshIdea(item, index));
+        setCurrentIdeas(nextIdeas);
+        setSelectedId(nextIdeas[0].id);
+        setDaily({
+          date: data.currentBoard.boardDate,
+          idea: nextIdeas[0],
+          signal: data.currentBoard.summary,
+          type: nextIdeas[0].type,
+          evidence: nextIdeas[0].evidence || [],
+          refreshSource: data.currentBoard.source,
+          generatedAt: data.currentBoard.createdAt
+        });
+      }
+
+      if (Array.isArray(data.archivedBoards)) {
+        setArchivedIdeas(data.archivedBoards.map((board) => ({
+          id: `db-board-${board.id}`,
+          savedAt: board.createdAt,
+          source: board.source,
+          summary: board.summary,
+          ideas: (board.ideas || []).map((item, index) => hydrateFreshIdea(item, index))
+        })));
+      }
+    } catch {
+      setStorageMode("local");
+    }
+  }
+
   async function loadDailyHook({ force = false } = {}) {
     const cached = window.localStorage.getItem(dailyCacheKey);
     if (!force && cached) {
@@ -741,6 +782,7 @@ export default function IdeaBoard() {
     const key = getOrCreateUserKey();
     setUserKey(key);
     loadSavedIdeas(key);
+    loadStoredBoards();
     loadDailyHook();
   }, []);
 
@@ -769,7 +811,7 @@ export default function IdeaBoard() {
   async function renewAllIdeas() {
     setIsRenewingIdeas(true);
     try {
-      const response = await fetch(`/api/daily-ideas?refresh=1&batch=20&t=${Date.now()}`, { cache: "no-store" });
+      const response = await fetch(`/api/daily-ideas?refresh=1&batch=20&persist=1&t=${Date.now()}`, { cache: "no-store" });
       const data = await response.json();
       if (!Array.isArray(data.ideas) || data.ideas.length === 0) {
         throw new Error("No new ideas returned");
@@ -784,10 +826,20 @@ export default function IdeaBoard() {
           id: `archive-${Date.now()}`,
           savedAt: new Date().toISOString(),
           source: data.refreshSource || "refresh",
+          summary: summarizeBoard(nextIdeas, data.refreshSource || "refresh"),
           ideas: currentIdeas
         },
         ...current
       ].slice(0, 10));
+      if (Array.isArray(data.archivedBoards)) {
+        setArchivedIdeas(data.archivedBoards.map((board) => ({
+          id: `db-board-${board.id}`,
+          savedAt: board.createdAt,
+          source: board.source,
+          summary: board.summary,
+          ideas: (board.ideas || []).map((item, index) => hydrateFreshIdea(item, index))
+        })));
+      }
       setCurrentIdeas(nextIdeas);
       setSelectedId(nextIdeas[0].id);
       setFilterType("all");
@@ -1000,6 +1052,7 @@ export default function IdeaBoard() {
               <article className="savedCard soft" key={archive.id}>
                 <span>{new Date(archive.savedAt).toLocaleString()} • {archive.source}</span>
                 <h3>{archive.ideas.length} old ideas</h3>
+                {archive.summary && <p>{archive.summary}</p>}
                 <ul>{archive.ideas.slice(0, 20).map((idea) => <li key={idea.id}>{idea.name}</li>)}</ul>
               </article>
             ))}
